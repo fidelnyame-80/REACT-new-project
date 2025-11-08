@@ -1,10 +1,10 @@
-import React from 'react'
 import Follow from './follow button'
 
-const Card = ({ name, title, image, followers }) => {
+const Card = (props) => {
+  const { name, title, image, followers } = props;
   return (
     <>
-      <div className='relative w-[19rem] h-[23rem] bg-black/40 rounded-xl overflow-hidden shadow-lg transition-all duration-500 transform hover:translate-y-[-10px] cursor-pointer'>
+      <div className='relative w-[19rem] h-[23rem] bg-black/40 rounded-xl overflow-hidden shadow-lg transition-all duration-500 transform hover:translate-y-[-10px] cursor-pointer '  >
         <img src={image} alt="img" className='object-cover inset-0 absolute w-full h-full'/>
 
               <div className="absolute inset-0 bg-black/30"></div>
