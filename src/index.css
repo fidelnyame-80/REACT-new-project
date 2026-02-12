@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@keyframes animate1{
+    0%{
+        transform: rotate(300deg)
+    }
+
+    10%{
+        transform: rotate(360deg);
+    }
+
+    100%{
+        transform: rotate(360deg);
+    }
+}   
+
+@keyframes animate2{
+    
+}
+
+.animate{
+    animation: animate1 5s linear infinite ;
+    
+}
