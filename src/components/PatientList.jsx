@@ -1,148 +1,140 @@
-import { useEffect } from "react"; // Allows side effects
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore"; // Firestore functions
-import { db } from "../services/firebase"; // Firestore instance
-import usePatientStore from "../store/usePatientStore"; // Zustand store
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { db } from "../services/firebase";
+import usePatientStore from "../store/usePatientStore";
+import filterPatients from "../utils/filterPatients";
 
 const PatientList = () => {
-  // Extract state and functions from Zustand
   const {
     patients,
-    setPatients,
     loading,
-    setLoading,
     error,
-    setError,
     updatePatient,
     deletePatient,
-    filteredPatients,
+    searchQuery,
+    ageFilter,
+    idFilter,
+    lastVisitFilter,
+    filtersApplied,
   } = usePatientStore();
 
-  const displayedPatients =
-  filteredPatients.length > 0 ? filteredPatients : patients;
+  const displayedPatients = filtersApplied
+    ? filterPatients(patients, {
+        searchQuery,
+        ageFilter,
+        idFilter,
+        lastVisitFilter,
+      })
+    : patients;
 
-
-  // Fetch patients when component mounts
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        setLoading(true); // Start loading
-
-        // Fetch all documents from "patients" collection
-        const querySnapshot = await getDocs(collection(db, "patients"));
-
-        // Convert Firestore documents into usable array
-        const patientsData = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Firestore document ID
-          ...doc.data(), // Spread patient data
-        }));
-
-        setPatients(patientsData); // Store in Zustand
-      } catch (err) {
-        console.error("Error fetching patients:", err);
-        setError("Failed to fetch patients");
-      } finally {
-        setLoading(false); // Stop loading
-      }
-    };
-
-    fetchPatients();
-  }, [setPatients, setLoading, setError]);
-
-  // 🔥 UPDATE FUNCTION
   const handleUpdate = async (patient) => {
     try {
-      // Ask user for new name (simple example)
       const newName = prompt("Enter new patient name:", patient.name);
-
-      // If user cancels, stop
       if (!newName) return;
 
-      // Create reference to specific document
       const patientRef = doc(db, "patients", patient.id);
 
-      // Update Firestore document
       await updateDoc(patientRef, {
-        name: newName, // Only updating name for demo
+        name: newName,
       });
 
-      // Update local Zustand state
       updatePatient({ ...patient, name: newName });
-
     } catch (err) {
       console.error("Error updating patient:", err);
-      setError("Update failed");
     }
   };
 
-  // 🔥 DELETE FUNCTION
   const handleDelete = async (id) => {
     try {
-      // Confirm deletion
       const confirmDelete = window.confirm(
         "Are you sure you want to delete this patient?"
       );
 
       if (!confirmDelete) return;
 
-      // Create document reference
       const patientRef = doc(db, "patients", id);
-
-      // Delete from Firestore
       await deleteDoc(patientRef);
-
-      // Remove from Zustand state
       deletePatient(id);
-
     } catch (err) {
       console.error("Error deleting patient:", err);
-      setError("Delete failed");
     }
   };
 
   if (loading) {
-    return <p className="text-center mt-10">Loading patients...</p>;
+    return (
+      <section
+        className="dashboard-panel animate-fade-in-up p-6"
+        style={{ animationDelay: "300ms" }}
+      >
+        <p className="text-center text-sm text-slate-300">Loading patients...</p>
+      </section>
+    );
   }
 
   if (error) {
-    return <p className="text-center text-red-500 mt-10">{error}</p>;
+    return (
+      <section
+        className="dashboard-panel animate-fade-in-up p-6"
+        style={{ animationDelay: "300ms" }}
+      >
+        <p className="text-center text-sm text-rose-300">{error}</p>
+      </section>
+    );
   }
 
   return (
-    <div className="max-w-5xl mx-auto mt-10">
-      <h2 className="text-2xl font-bold mb-6">Patient Records</h2>
+    <section
+      className="dashboard-panel animate-fade-in-up overflow-hidden"
+      style={{ animationDelay: "300ms" }}
+    >
+      <div className="flex flex-col gap-3 border-b border-white/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+            Records Table
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">
+            Patient Records
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            View, edit, or remove entries from the active register.
+          </p>
+        </div>
 
-      <div className="overflow-x-auto bg-white shadow rounded-xl">
-        <table className="min-w-full text-left">
-          <thead className="bg-gray-100">
+        <span className="inline-flex w-fit rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
+          {displayedPatients.length} visible
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-slate-950/70 text-xs uppercase tracking-wider text-slate-400">
             <tr>
-              <th className="p-3">Name</th>
-              <th className="p-3">Patient ID</th>
-              <th className="p-3">Age</th>
-              <th className="p-3">Last Visit</th>
-              <th className="p-3">Actions</th> {/* Added actions column */}
+              <th className="px-6 py-3 font-medium">Name</th>
+              <th className="px-6 py-3 font-medium">Patient ID</th>
+              <th className="px-6 py-3 font-medium">Age</th>
+              <th className="px-6 py-3 font-medium">Last Visit</th>
+              <th className="px-6 py-3 font-medium">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {patients.length === 0 ? (
+            {displayedPatients.length === 0 ? (
               <tr>
-                <td colSpan="5" className="p-4 text-center">
-                  No patients found.
+                <td colSpan="5" className="px-6 py-10 text-center text-slate-400">
+                  No matching patients found.
                 </td>
               </tr>
             ) : (
               displayedPatients.map((patient) => (
-                <tr key={patient.id} className="border-t">
-                  <td className="p-3">{patient.name}</td>
-                  <td className="p-3">{patient.patientId}</td>
-                  <td className="p-3">{patient.age}</td>
-                  <td className="p-3">
+                <tr
+                  key={patient.id}
+                  className="border-t border-white/5 text-slate-200 transition hover:bg-white/[0.03]"
+                >
+                  <td className="px-6 py-4 font-medium text-white">
+                    {patient.name}
+                  </td>
+                  <td className="px-6 py-4 text-slate-300">{patient.patientId}</td>
+                  <td className="px-6 py-4">{patient.age}</td>
+                  <td className="px-6 py-4 text-slate-300">
                     {patient.lastVisit
                       ? patient.lastVisit.toDate().toLocaleString("en-GB", {
                           day: "2-digit",
@@ -156,21 +148,22 @@ const PatientList = () => {
                       : "Not Recorded"}
                   </td>
 
-                  {/* ACTION BUTTONS */}
-                  <td className="p-3 space-x-2">
-                    <button
-                      onClick={() => handleUpdate(patient)}
-                      className="bg-green-500 text-white px-3 py-1 rounded"
-                    >
-                      Update
-                    </button>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleUpdate(patient)}
+                        className="inline-flex rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-300/60 hover:bg-emerald-400/20"
+                      >
+                        Update
+                      </button>
 
-                    <button
-                      onClick={() => handleDelete(patient.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded"
-                    >
-                      Delete
-                    </button>
+                      <button
+                        onClick={() => handleDelete(patient.id)}
+                        className="inline-flex rounded-lg border border-rose-400/40 bg-rose-400/10 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/20"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -178,7 +171,7 @@ const PatientList = () => {
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 };
 

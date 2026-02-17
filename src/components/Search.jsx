@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import usePatientStore from "../store/usePatientStore";
 
 const Search = () => {
@@ -12,117 +12,134 @@ const Search = () => {
     setAgeFilter,
     setIdFilter,
     setLastVisitFilter,
-    setFilteredPatients,
+    resetFilters,
+    setFiltersApplied,
   } = usePatientStore();
 
-  // 🔹 AUTOCOMPLETE SUGGESTIONS
   const suggestions = useMemo(() => {
     if (!searchQuery) return [];
 
-    return patients.filter((patient) =>
-      patient.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return patients
+      .filter((patient) =>
+        patient.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .slice(0, 6);
   }, [searchQuery, patients]);
 
-  // 🔹 FILTERING LOGIC WHEN BUTTON IS CLICKED
-  const handleSearch = () => {
-    const results = patients.filter((patient) => {
-      const queryMatch =
-        patient.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleSearch = () => setFiltersApplied(true);
 
-      const idMatch = idFilter
-        ? patient.patientId.toLowerCase().includes(idFilter.toLowerCase())
-        : true;
+  const handleNameChange = (e) => {
+    setSearchQuery(e.target.value);
+    setFiltersApplied(false);
+  };
 
-      const ageMatch = ageFilter
-        ? Number(patient.age) === Number(ageFilter)
-        : true;
+  const handleIdChange = (e) => {
+    setIdFilter(e.target.value);
+    setFiltersApplied(false);
+  };
 
-      let visitMatch = true;
-      if (lastVisitFilter && patient.lastVisit?.toDate) {
-        const visitDate = patient.lastVisit.toDate();
-        const now = new Date();
-        const diffDays = (now - visitDate) / (1000 * 60 * 60 * 24);
+  const handleAgeChange = (e) => {
+    setAgeFilter(e.target.value);
+    setFiltersApplied(false);
+  };
 
-        visitMatch = diffDays <= Number(lastVisitFilter);
-      }
-
-      return queryMatch && idMatch && ageMatch && visitMatch;
-    });
-
-    setFilteredPatients(results);
+  const handleVisitChange = (e) => {
+    setLastVisitFilter(e.target.value);
+    setFiltersApplied(false);
   };
 
   return (
-    <div className="bg-white p-6 rounded shadow mb-6">
-      <div className="grid md:grid-cols-4 gap-4">
+    <section
+      className="dashboard-panel animate-fade-in-up p-5 sm:p-6"
+      style={{ animationDelay: "200ms" }}
+    >
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Records Search</h2>
+          <p className="text-sm text-slate-400">
+            Search by name, patient ID, age, or recent visits.
+          </p>
+        </div>
+        <span className="inline-flex rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-xs font-medium text-slate-300">
+          Quick Lookup
+        </span>
+      </div>
 
-        {/* NAME SEARCH */}
+      <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr_0.7fr_0.95fr_auto_auto]">
         <div className="relative">
           <input
             type="text"
             placeholder="Search by name..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full p-2 border rounded"
+            onChange={handleNameChange}
+            className="input-control"
           />
 
-          {/* AUTOCOMPLETE DROPDOWN */}
           {suggestions.length > 0 && (
-            <div className="absolute bg-white border w-full mt-1 rounded shadow max-h-40 overflow-y-auto z-10">
+            <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-700/70 bg-slate-900/95 p-1 shadow-2xl shadow-black/40 backdrop-blur">
               {suggestions.map((patient) => (
-                <div
+                <button
+                  type="button"
                   key={patient.id}
-                  onClick={() => setSearchQuery(patient.name)}
-                  className="p-2 hover:bg-blue-100 cursor-pointer"
+                  onClick={() => {
+                    setSearchQuery(patient.name);
+                    setFiltersApplied(false);
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100"
                 >
-                  {patient.name}
-                </div>
+                  {patient.name}{" "}
+                  <span className="text-xs text-slate-500">
+                    ({patient.patientId})
+                  </span>
+                </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* ID FILTER */}
         <input
           type="text"
           placeholder="Filter by ID..."
           value={idFilter}
-          onChange={(e) => setIdFilter(e.target.value)}
-          className="p-2 border rounded"
+          onChange={handleIdChange}
+          className="input-control"
         />
 
-        {/* AGE FILTER */}
         <input
           type="number"
           placeholder="Exact Age..."
           value={ageFilter}
-          onChange={(e) => setAgeFilter(e.target.value)}
-          className="p-2 border rounded"
+          onChange={handleAgeChange}
+          className="input-control"
         />
 
-        {/* LAST VISIT FILTER */}
         <select
           value={lastVisitFilter}
-          onChange={(e) => setLastVisitFilter(e.target.value)}
-          className="p-2 border rounded"
+          onChange={handleVisitChange}
+          className="input-control appearance-none"
         >
           <option value="">Any Visit</option>
           <option value="7">Last 7 Days</option>
           <option value="30">Last 30 Days</option>
         </select>
-      </div>
 
-      {/* SEARCH BUTTON */}
-      <div className="mt-4">
         <button
+          type="button"
           onClick={handleSearch}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+          className="btn-primary min-h-[46px] whitespace-nowrap"
         >
-          Search
+          Run Search
+        </button>
+
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="min-h-[46px] whitespace-nowrap rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-cyan-300/40 hover:text-cyan-100"
+        >
+          Reset
         </button>
       </div>
-    </div>
+    </section>
   );
 };
 
