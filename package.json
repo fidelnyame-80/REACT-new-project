@@ -1,0 +1,12 @@
+{
+  "name": "my-http-server",
+  "version": "1.0.0",
+  "description": "a simple http server to handle requests and provide responses",
+  "license": "ISC",
+  "author": "fidel",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
